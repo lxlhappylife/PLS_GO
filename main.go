@@ -1,38 +1,73 @@
 package main
 
 import (
-	// "time"
-	// "PLS_GO/fileoperations"
 	"PLS_GO/pcieutils"
-	"fmt"
+	"PLS_GO/testcases"
+	"log"
+	// "fmt"
 )
 
 func main() {
-	// fmt.Println("hello world.")
-	// FileName := "test_create_file1.log"
-	// configfile.CreateNewEmptyFile(FileName)
-	// configfile.TruncateFile(FileName, 50)
-	// configfile.GetFileInfo(FileName)
-	// fileoperations.BufWriteFile(FileName, "Hello World!!")
-	// baseAdr := int64(0xF8000000 + 0x1e*0x100000)
+	// dut = Device
+	// testcases.PrePcieLanemarginCmds()
+	EPBus := uint8(0xa)
+	EPDevice := uint8(0x0)
+	EPFunction := uint8(0x0)
+	RCBus, RCDevice, RCFunction := pcieutils.GetHostBDF(EPBus, EPDevice, EPFunction)
+	testcases.PCIePrecondition(EPBus, EPDevice, EPFunction, RCBus, RCDevice, RCFunction)
+	// Lane Num 0x0
+	LaneNum := uint(0x0)
+	ReceiverNum := uint(0x6)
+	testcases.Precondition(EPBus, EPDevice, EPFunction, LaneNum, ReceiverNum)
 
-	// value1 := pcieutils.Readu32(baseAdr, 0xf0)
-	// fmt.Println("mask0")
-	// value1 = value1&0xFFFFFFF0 | 0x3
-	// fmt.Println("mask01")
-	// pcieutils.Writeu16(baseAdr, 0xf0, uint16(value1))
+	// IndErrorSampler,
+	// 	SampleReportingMethod,
+	// 	IndLeftRightTiming,
+	// 	IndUpDownVoltage,
+	_, _, _, _, VoltageSupported := testcases.ReportMarginControlCapabilites(EPBus,
+		EPDevice, EPFunction, LaneNum, ReceiverNum)
+	testcases.NoCommand(EPBus, EPDevice, EPFunction, LaneNum)
+	if VoltageSupported {
+		NumVoltageSteps := testcases.ReportNumVoltageSteps(EPBus, EPDevice, EPFunction,
+			LaneNum, ReceiverNum)
+		log.Printf("NumVoltageSteps = 0x%x\n", NumVoltageSteps)
+		testcases.NoCommand(EPBus, EPDevice, EPFunction, LaneNum)
+		MaxVoltageOffset := testcases.ReportMaxVoltageOffset(EPBus, EPDevice, EPFunction, LaneNum, ReceiverNum)
 
-	value1 := pcieutils.GetPCIeBaseAddress()
-	// value2 := pcieutils.Readu32(baseAdr, 0x104)
-	// value3 := pcieutils.Readu32(int64(0xF7900000), 0x28)
-	// value4 := pcieutils.Readu32(int64(0xF7900000), 0x2C)
-	// value5 := pcieutils.Readu32(int64(0xffffe000), 0x0)
-	fmt.Printf("Value1 = 0x%x\n", value1)
-	// fmt.Printf("Value2 = 0x%x\n", value2)
-	// fmt.Printf("Value3 = 0x%x\n", value3)
-	// fmt.Printf("Value4 = 0x%x\n", value4)
-	// fmt.Printf("Value5 = 0x%x\n", value5)
-	// go pcieutils.Polling(baseAdr, 0x110, 30, 5)
-	// go pcieutils.Polling(baseAdr, 0x104, 50, 5)
-	// time.Sleep(6 * time.Second)
+		log.Printf("MaxVoltageOffset = 0x%x\n", MaxVoltageOffset)
+		testcases.NoCommand(EPBus, EPDevice, EPFunction, LaneNum)
+		SamplingRateVoltage := testcases.ReportSamplingRateVoltage(EPBus, EPDevice, EPFunction, LaneNum, ReceiverNum)
+
+		log.Printf("SamplingRateVoltage = 0x%x\n", SamplingRateVoltage)
+		testcases.NoCommand(EPBus, EPDevice, EPFunction, LaneNum)
+	}
+	NumTimingSteps := testcases.ReportNumTimingSteps(EPBus, EPDevice, EPFunction,
+		LaneNum, ReceiverNum)
+
+	log.Printf("NumTimingSteps = 0x%x\n", NumTimingSteps)
+	testcases.NoCommand(EPBus, EPDevice, EPFunction, LaneNum)
+	MaxTimingOffset := testcases.ReportMaxTimingOffset(EPBus, EPDevice, EPFunction, LaneNum, ReceiverNum)
+
+	log.Printf("MaxTimingOffset = 0x%x\n", MaxTimingOffset)
+	testcases.NoCommand(EPBus, EPDevice, EPFunction, LaneNum)
+	SamplingRateTiming := testcases.ReportSamplingRateTiming(EPBus, EPDevice, EPFunction,
+		LaneNum, ReceiverNum)
+
+	log.Printf("SamplingRateTiming = 0x%x\n", SamplingRateTiming)
+	testcases.NoCommand(EPBus, EPDevice, EPFunction, LaneNum)
+	SamepleCount := testcases.ReportSamepleCount(EPBus, EPDevice, EPFunction,
+		LaneNum, ReceiverNum)
+
+	log.Printf("SamepleCount = 0x%x\n", SamepleCount)
+	testcases.NoCommand(EPBus, EPDevice, EPFunction, LaneNum)
+	MaxLanes := testcases.ReportMaxLanes(EPBus, EPDevice, EPFunction,
+		LaneNum, ReceiverNum)
+
+	log.Printf("MaxLanes = 0x%x\n", MaxLanes)
+	testcases.NoCommand(EPBus, EPDevice, EPFunction, LaneNum)
+	ErrorLimit := testcases.SetErrorCountLimit(EPBus, EPDevice, EPFunction,
+		LaneNum, ReceiverNum, 0x5) //Set Error Limit to 0x5
+
+	log.Printf("ErrorLimit = 0x%x\n", ErrorLimit)
+	testcases.NoCommand(EPBus, EPDevice, EPFunction, LaneNum)
 }
