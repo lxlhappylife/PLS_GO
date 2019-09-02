@@ -144,7 +144,7 @@ func GetPCIeCapHeaderAddress(bus uint8, device uint8, function uint8, CapID uint
 	var value uint8
 	var count int
 
-	fmt.Printf("%x-%x-%x\n", bus, device, function)
+	// fmt.Printf("%x-%x-%x\n", bus, device, function)
 	for true {
 		value = ConfigReadu8(bus, device, function, uint16(address))
 		if value == CapID {
@@ -262,7 +262,7 @@ func DisableHardwareAutonomousWidth(bus uint8, device uint8, function uint8) {
 	PCIeHeaderAddress := GetPCIeCapHeaderAddress(bus, device, function, 0x10)
 	LinkControlRegisterAddress := PCIeHeaderAddress + 0x10
 	value := ConfigReadu16(bus, device, function, uint16(LinkControlRegisterAddress))
-	log.Printf("BEFORE\t - LinkControlRegister = 0x%x\n", value)
+	// log.Printf("BEFORE\t - LinkControlRegister = 0x%x\n", value)
 	if value&(0x1<<9) == 0x0 {
 		ConfigWriteu16(bus, device, function, uint16(LinkControlRegisterAddress), uint16(value|(0x1<<9)))
 		log.Printf("{0x%x:0x%x.0x%x} Disable hardware Autonomous Width", bus, device, function)

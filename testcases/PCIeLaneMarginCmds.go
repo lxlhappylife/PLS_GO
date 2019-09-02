@@ -3,7 +3,8 @@ package testcases
 import (
 	"PLS_GO/pcieutils"
 	"fmt"
-	"log"
+
+	log "PLS_GO/log"
 	"time"
 )
 
@@ -70,10 +71,10 @@ func GetMarginingPortCapabilities(bus uint8, device uint8, function uint8) uint 
 	var offset uint16 = 0x4
 	value := pcieutils.ConfigReadu16(bus, device, function, PCIeLaneMarginingHeaderAddress+offset)
 	if value&0x1 == 0x1 {
-		fmt.Println("Margining is partially implemented using Device Driver software.")
+		log.PRINT("Margining is partially implemented using Device Driver software.\n", 3)
 		return 0x1
 	}
-	fmt.Println("margining does not require device driver software.")
+	log.PRINT("margining does not require device driver software.\n", 2)
 	return 0x0
 
 }
@@ -87,23 +88,23 @@ func GetMarginingPortStatus(bus uint8, device uint8, function uint8) (uint, uint
 		function,
 		0x27)
 	var offset uint16 = 0x6
-	log.Printf("PCIeLaneMarginingHeaderAddress = 0x%x\n", PCIeLaneMarginingHeaderAddress)
+	log.PRINT(fmt.Sprintf("PCIeLaneMarginingHeaderAddress = 0x%x\n", PCIeLaneMarginingHeaderAddress), 1)
 	value := pcieutils.ConfigReadu8(bus, device, function, PCIeLaneMarginingHeaderAddress+offset)
 	var MarginingReady, MarginingSoftwareReady uint
 	MarginingReady = uint(value & 0x1)
 	MarginingSoftwareReady = uint(value >> 4 & 0x1)
-	log.Printf("value = 0x%x\n", value)
+	log.PRINT(fmt.Sprintf("value = 0x%x\n", value), 1)
 	if MarginingReady == 0x1 {
-		fmt.Println("Margining Ready")
+		log.PRINT("Margining Ready\n", 2)
 	} else {
-		log.Fatal("Margining NOT Ready")
+		log.PRINT("Margining NOT Ready\n", 5)
 	}
 	MarginingusesDriverSoftware := GetMarginingPortCapabilities(bus, device, function)
 	if MarginingusesDriverSoftware == 0x1 {
 		if MarginingSoftwareReady == 0x1 {
-			fmt.Println("The required software has performed the required initialization.")
+			log.PRINT("The required software has performed the required initialization.\n", 2)
 		} else {
-			log.Fatal("The required software has not performed the required initialization.")
+			log.PRINT("The required software has not performed the required initialization.\n", 3)
 		}
 	}
 	return MarginingReady, MarginingSoftwareReady
@@ -159,7 +160,7 @@ func NoCommand(bus uint8, device uint8, function uint8, LaneNum uint) {
 	InputMarginType := uint(0x7)
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(0x9C)
-	log.Printf("Issue No Command\n")
+	log.Debug("Issue No Command\n")
 	SetMarginingLaneControlRegister(bus, device, function,
 		LaneNum,
 		InputReceiverNum,
@@ -169,9 +170,9 @@ func NoCommand(bus uint8, device uint8, function uint8, LaneNum uint) {
 	time.Sleep(10 * time.Millisecond)
 	OutputReceiverNum, _, _, OutputMarginPayload := GetMarginingLaneStatusRegister(bus, device, function, LaneNum)
 	if 0x0 != OutputReceiverNum {
-		log.Fatal("ReceiverNum Data should be ZERO")
+		log.PRINT("ReceiverNum Data should be ZERO", 5)
 	}
-	log.Printf("OutputMarginPayload = 0x%x\n", OutputMarginPayload)
+	log.PRINT(fmt.Sprintf("OutputMarginPayload = 0x%x\n", OutputMarginPayload), 1)
 }
 
 /*
@@ -179,14 +180,15 @@ ReportMarginControlCapabilites : Use for Read marin Control Capabilities
 Input: LaneNum, ReceiverNum
 Ouput:
 */
-func ReportMarginControlCapabilites(bus uint8, device uint8, function uint8, LaneNum uint,
+func ReportMarginControlCapabilites(bus uint8, device uint8,
+	function uint8, LaneNum uint,
 	ReceiverNum uint) (bool, bool, bool, bool, bool) {
 	InputReceiverNum := ReceiverNum
 	InputMarginType := uint(0x1)
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(0x88)
 
-	log.Printf("Issue Report Margin Control Capabilites Command\n")
+	log.Debug("Issue Report Margin Control Capabilites Command\n")
 	SetMarginingLaneControlRegister(bus, device, function,
 		LaneNum,
 		InputReceiverNum,
@@ -196,8 +198,6 @@ func ReportMarginControlCapabilites(bus uint8, device uint8, function uint8, Lan
 	time.Sleep(10 * time.Millisecond)
 	OutputReceiverNum, OutputMarginType, OutputUsageModel,
 		OutputMarginPayload := GetMarginingLaneStatusRegister(bus, device, function, LaneNum)
-	// log.Printf("InputReceiverNum = 0x%x\n", InputReceiverNum)
-	// log.Printf("OutputReceiverNum = 0x%x\n", OutputReceiverNum)
 	if InputReceiverNum != OutputReceiverNum {
 		log.Fatal("ReceiverNum Data Mis-Match")
 	}
@@ -207,7 +207,7 @@ func ReportMarginControlCapabilites(bus uint8, device uint8, function uint8, Lan
 	if InputUsageModel != OutputUsageModel {
 		log.Fatal("UsageModel Data Mis-Match")
 	}
-	log.Printf("OutputMarginPayload = 0x%x\n", OutputMarginPayload)
+	log.PRINT(fmt.Sprintf("OutputMarginPayload = 0x%x\n", OutputMarginPayload), 1)
 	var IndErrorSampler bool
 	var SampleReportingMethod bool
 	var IndLeftRightTiming bool
@@ -215,31 +215,31 @@ func ReportMarginControlCapabilites(bus uint8, device uint8, function uint8, Lan
 	var VoltageSupported bool
 	if OutputMarginPayload&0x1 == 0x1 {
 		IndErrorSampler = true
-		log.Printf("IndErrorSampler Supports\n")
+		log.Debug("IndErrorSampler Supports\n")
 	} else {
 		IndErrorSampler = false
 	}
 	if OutputMarginPayload>>1&0x1 == 0x1 {
 		SampleReportingMethod = true
-		log.Printf("SampleReportingMethod Supports\n")
+		log.Debug("SampleReportingMethod Supports\n")
 	} else {
 		SampleReportingMethod = false
 	}
 	if OutputMarginPayload>>2&0x1 == 0x1 {
 		IndLeftRightTiming = true
-		log.Printf("IndLeftRightTiming Supports\n")
+		log.Debug("IndLeftRightTiming Supports\n")
 	} else {
 		IndLeftRightTiming = false
 	}
 	if OutputMarginPayload>>3&0x1 == 0x1 {
 		IndUpDownVoltage = true
-		log.Printf("IndUpDownVoltage Supports\n")
+		log.Debug("IndUpDownVoltage Supports\n")
 	} else {
 		IndUpDownVoltage = false
 	}
 	if OutputMarginPayload>>4&0x1 == 0x1 {
 		VoltageSupported = true
-		log.Printf("VoltageSupported Supports\n")
+		log.Debug("VoltageSupported Supports\n")
 	} else {
 		VoltageSupported = false
 	}
@@ -250,12 +250,13 @@ func ReportMarginControlCapabilites(bus uint8, device uint8, function uint8, Lan
 /*
 ReportNumVoltageSteps : ...
 */
-func ReportNumVoltageSteps(bus uint8, device uint8, function uint8, LaneNum uint, ReceiverNum uint) uint8 {
+func ReportNumVoltageSteps(bus uint8, device uint8, function uint8,
+	LaneNum uint, ReceiverNum uint) uint8 {
 	InputReceiverNum := ReceiverNum
 	InputMarginType := uint(0x1)
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(0x89)
-	log.Printf("Issue Report Num Voltage Steps Command.\n")
+	log.Debug("Issue Report Num Voltage Steps Command.\n")
 	SetMarginingLaneControlRegister(bus, device, function,
 		LaneNum,
 		InputReceiverNum,
@@ -276,7 +277,7 @@ func ReportNumVoltageSteps(bus uint8, device uint8, function uint8, LaneNum uint
 	if InputUsageModel != OutputUsageModel {
 		log.Fatal("UsageModel Data Mis-Match")
 	}
-	log.Printf("OutputMarginPayload = 0x%x\n", OutputMarginPayload)
+	log.PRINT(fmt.Sprintf("OutputMarginPayload = 0x%x\n", OutputMarginPayload), 1)
 	return (OutputMarginPayload & 0x7F)
 }
 
@@ -288,7 +289,7 @@ func ReportNumTimingSteps(bus uint8, device uint8, function uint8, LaneNum uint,
 	InputMarginType := uint(0x1)
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(0x8A)
-	log.Printf("Issue Report Num Timing Steps Command.\n")
+	log.Debug("Issue Report Num Timing Steps Command.\n")
 	SetMarginingLaneControlRegister(bus, device, function,
 		LaneNum,
 		InputReceiverNum,
@@ -309,7 +310,7 @@ func ReportNumTimingSteps(bus uint8, device uint8, function uint8, LaneNum uint,
 	if InputUsageModel != OutputUsageModel {
 		log.Fatal("UsageModel Data Mis-Match")
 	}
-	log.Printf("OutputMarginPayload = 0x%x\n", OutputMarginPayload)
+	log.Debug(fmt.Sprintf("OutputMarginPayload = 0x%x\n", OutputMarginPayload))
 	return (OutputMarginPayload & 0x3F)
 }
 
@@ -322,7 +323,7 @@ func ReportMaxTimingOffset(bus uint8, device uint8, function uint8,
 	InputMarginType := uint(0x1)
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(0x8B)
-	log.Printf("Issue Report Max Timing Offset Command.\n")
+	log.Debug("Issue Report Max Timing Offset Command.\n")
 	SetMarginingLaneControlRegister(bus, device, function,
 		LaneNum,
 		InputReceiverNum,
@@ -344,7 +345,7 @@ func ReportMaxTimingOffset(bus uint8, device uint8, function uint8,
 	if InputUsageModel != OutputUsageModel {
 		log.Fatal("UsageModel Data Mis-Match")
 	}
-	log.Printf("OutputMarginPayload = 0x%x\n", OutputMarginPayload)
+	log.Debug(fmt.Sprintf("OutputMarginPayload = 0x%x\n", OutputMarginPayload))
 	return (OutputMarginPayload & 0x7F)
 }
 
@@ -356,7 +357,7 @@ func ReportMaxVoltageOffset(bus uint8, device uint8, function uint8, LaneNum uin
 	InputMarginType := uint(0x1)
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(0x8C)
-	log.Printf("Issue Report Max Voltage Offset Command.\n")
+	log.Debug("Issue Report Max Voltage Offset Command.\n")
 	SetMarginingLaneControlRegister(bus, device, function, LaneNum,
 		InputReceiverNum,
 		InputMarginType,
@@ -377,7 +378,7 @@ func ReportMaxVoltageOffset(bus uint8, device uint8, function uint8, LaneNum uin
 	if InputUsageModel != OutputUsageModel {
 		log.Fatal("UsageModel Data Mis-Match")
 	}
-	log.Printf("OutputMarginPayload = 0x%x\n", OutputMarginPayload)
+	log.PRINT(fmt.Sprintf("OutputMarginPayload = 0x%x\n", OutputMarginPayload), 1)
 	return (OutputMarginPayload & 0x7F)
 }
 
@@ -389,7 +390,7 @@ func ReportSamplingRateVoltage(bus uint8, device uint8, function uint8, LaneNum 
 	InputMarginType := uint(0x1)
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(0x8D)
-	log.Printf("Issue Report Sampling Rate Voltage Command.\n")
+	log.Debug("Issue Report Sampling Rate Voltage Command.\n")
 	SetMarginingLaneControlRegister(bus, device, function, LaneNum,
 		InputReceiverNum,
 		InputMarginType,
@@ -410,7 +411,7 @@ func ReportSamplingRateVoltage(bus uint8, device uint8, function uint8, LaneNum 
 	if InputUsageModel != OutputUsageModel {
 		log.Fatal("UsageModel Data Mis-Match")
 	}
-	log.Printf("OutputMarginPayload = 0x%x\n", OutputMarginPayload)
+	log.Debug(fmt.Sprintf("OutputMarginPayload = 0x%x\n", OutputMarginPayload))
 	return (OutputMarginPayload & 0x3F)
 }
 
@@ -422,7 +423,7 @@ func ReportSamplingRateTiming(bus uint8, device uint8, function uint8, LaneNum u
 	InputMarginType := uint(0x1)
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(0x8E)
-	log.Printf("Issue Report Sampling Rate Timing Command.\n")
+	log.Debug("Issue Report Sampling Rate Timing Command.\n")
 	SetMarginingLaneControlRegister(bus, device, function, LaneNum,
 		InputReceiverNum,
 		InputMarginType,
@@ -443,19 +444,20 @@ func ReportSamplingRateTiming(bus uint8, device uint8, function uint8, LaneNum u
 	if InputUsageModel != OutputUsageModel {
 		log.Fatal("UsageModel Data Mis-Match")
 	}
-	log.Printf("OutputMarginPayload = 0x%x\n", OutputMarginPayload)
+	log.Debug(fmt.Sprintf("OutputMarginPayload = 0x%x\n", OutputMarginPayload))
 	return (OutputMarginPayload & 0x3F)
 }
 
 /*
 ReportSamepleCount : ...
 */
-func ReportSamepleCount(bus uint8, device uint8, function uint8, LaneNum uint, ReceiverNum uint) uint8 {
+func ReportSamepleCount(bus uint8, device uint8, function uint8,
+	LaneNum uint, ReceiverNum uint) uint8 {
 	InputReceiverNum := ReceiverNum
 	InputMarginType := uint(0x1)
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(0x8F)
-	log.Printf("Issue Report Sampling Count Command.\n")
+	log.Debug("Issue Report Sampling Count Command.\n")
 	SetMarginingLaneControlRegister(bus, device, function, LaneNum,
 		InputReceiverNum,
 		InputMarginType,
@@ -476,7 +478,7 @@ func ReportSamepleCount(bus uint8, device uint8, function uint8, LaneNum uint, R
 	if InputUsageModel != OutputUsageModel {
 		log.Fatal("UsageModel Data Mis-Match")
 	}
-	log.Printf("OutputMarginPayload = 0x%x\n", OutputMarginPayload)
+	log.Debug(fmt.Sprintf("OutputMarginPayload = 0x%x\n", OutputMarginPayload))
 	return (OutputMarginPayload & 0x7F)
 }
 
@@ -488,7 +490,7 @@ func ReportMaxLanes(bus uint8, device uint8, function uint8, LaneNum uint, Recei
 	InputMarginType := uint(0x1)
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(0x90)
-	log.Printf("Issue Report Max Lanes Command.\n")
+	log.Debug("Issue Report Max Lanes Command.\n")
 	SetMarginingLaneControlRegister(bus, device, function, LaneNum,
 		InputReceiverNum,
 		InputMarginType,
@@ -509,7 +511,7 @@ func ReportMaxLanes(bus uint8, device uint8, function uint8, LaneNum uint, Recei
 	if InputUsageModel != OutputUsageModel {
 		log.Fatal("UsageModel Data Mis-Match")
 	}
-	log.Printf("OutputMarginPayload = 0x%x\n", OutputMarginPayload)
+	log.Debug(fmt.Sprintf("OutputMarginPayload = 0x%x\n", OutputMarginPayload))
 	return (OutputMarginPayload & 0x1F)
 }
 
@@ -518,12 +520,12 @@ SetErrorCountLimit : ...
 */
 func SetErrorCountLimit(bus uint8, device uint8, function uint8, LaneNum uint,
 	ReceiverNum uint,
-	ErrorCountLimit uint) uint8 {
+	ErrorCountLimit uint) uint {
 	InputReceiverNum := ReceiverNum
 	InputMarginType := uint(0x2) // Write Command
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(ErrorCountLimit) | (0x3 << 6)
-	log.Printf("Issue Set Error Count Limit Command.\n")
+	log.Info("Issue Set Error Count Limit Command.\n")
 	SetMarginingLaneControlRegister(bus, device, function, LaneNum,
 		InputReceiverNum,
 		InputMarginType,
@@ -544,8 +546,8 @@ func SetErrorCountLimit(bus uint8, device uint8, function uint8, LaneNum uint,
 	if InputUsageModel != OutputUsageModel {
 		log.Fatal("UsageModel Data Mis-Match")
 	}
-	log.Printf("OutputMarginPayload = 0x%x\n", OutputMarginPayload)
-	return (OutputMarginPayload & 0x3F)
+	log.Debug(fmt.Sprintf("OutputMarginPayload = 0x%x\n", OutputMarginPayload))
+	return uint(OutputMarginPayload & 0x3F)
 }
 
 /*
@@ -557,7 +559,7 @@ func GoToNormalSettings(bus uint8, device uint8, function uint8, LaneNum uint,
 	InputMarginType := uint(0x2) // Write Command
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(0xF)
-	log.Printf("Issue Go To Normal Settings Command.\n")
+	log.Info("Issue Go To Normal Settings Command.\n")
 	SetMarginingLaneControlRegister(bus, device, function, LaneNum,
 		InputReceiverNum,
 		InputMarginType,
@@ -592,7 +594,7 @@ func ClearErrorLog(bus uint8, device uint8, function uint8, LaneNum uint,
 	InputMarginType := uint(0x2) // Write Command
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := uint8(0x55)
-	log.Printf("Issue Clear Error Log Command.\n")
+	log.Info("Issue Clear Error Log Command.\n")
 	SetMarginingLaneControlRegister(bus, device, function, LaneNum,
 		InputReceiverNum,
 		InputMarginType,
@@ -628,17 +630,35 @@ func StepMarginToTimingOffset(bus uint8, device uint8, function uint8, LaneNum u
 	InputMarginType := uint(0x3)
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := PayLoad
-	log.Printf("Issue Step Margin To Timing Offset Command.\n")
+	log.Debug(fmt.Sprintf("Issue Step Margin To Timing Offset Command.<%x>\n", PayLoad))
 	SetMarginingLaneControlRegister(bus, device, function, LaneNum,
 		InputReceiverNum,
 		InputMarginType,
 		InputUsageModel,
 		InputMarginpayload)
-	time.Sleep(10 * time.Millisecond)
-	OutputReceiverNum,
+	ErrorCount := uint8(0x0)
+	StepMarginExecutionStatus := uint8(0x1)
+	count := 0
+	var OutputReceiverNum,
 		OutputMarginType,
-		OutputUsageModel,
-		OutputMarginPayload := GetMarginingLaneStatusRegister(bus, device, function, LaneNum)
+		OutputUsageModel uint
+	var OutputMarginPayload uint8
+	for StepMarginExecutionStatus == 0x1 {
+		time.Sleep(10 * time.Millisecond)
+		OutputReceiverNum,
+			OutputMarginType,
+			OutputUsageModel,
+			OutputMarginPayload = GetMarginingLaneStatusRegister(bus, device, function, LaneNum)
+
+		StepMarginExecutionStatus = OutputMarginPayload >> 6
+		ErrorCount = OutputMarginPayload & 0x3F
+		if count > 20 {
+			log.Fatal("Receiver must not report a Step Margin Execution Status of 01b for more than 100 ms after it receives a new valid Step Margin command.")
+		} else if count > 0 {
+			log.Debug("Retry")
+		}
+		count++
+	}
 	if InputReceiverNum != OutputReceiverNum {
 		log.Fatal("ReceiverNum Data Mis-Match")
 	}
@@ -648,8 +668,6 @@ func StepMarginToTimingOffset(bus uint8, device uint8, function uint8, LaneNum u
 	if InputUsageModel != OutputUsageModel {
 		log.Fatal("UsageModel Data Mis-Match")
 	}
-	StepMarginExecutionStatus := OutputMarginPayload >> 6
-	ErrorCount := OutputMarginPayload & 0x3F
 	return StepMarginExecutionStatus, ErrorCount
 }
 
@@ -663,17 +681,33 @@ func StepMarginToVoltageOffset(bus uint8, device uint8, function uint8, LaneNum 
 	InputMarginType := uint(0x4)
 	InputUsageModel := uint(0x0) // Default
 	InputMarginpayload := PayLoad
-	log.Printf("Issue Step Margin To Voltage Offset Command.\n")
+	log.Debug(fmt.Sprintf("Issue Step Margin To Voltage Offset Command.<%x>\n", PayLoad))
 	SetMarginingLaneControlRegister(bus, device, function, LaneNum,
 		InputReceiverNum,
 		InputMarginType,
 		InputUsageModel,
 		InputMarginpayload)
-	time.Sleep(10 * time.Millisecond)
-	OutputReceiverNum,
+	ErrorCount := uint8(0x0)
+	StepMarginExecutionStatus := uint8(0x1)
+	count := 0
+	var OutputReceiverNum,
 		OutputMarginType,
-		OutputUsageModel,
-		OutputMarginPayload := GetMarginingLaneStatusRegister(bus, device, function, LaneNum)
+		OutputUsageModel uint
+	var OutputMarginPayload uint8
+	for StepMarginExecutionStatus == 0x1 {
+		time.Sleep(10 * time.Millisecond)
+		OutputReceiverNum,
+			OutputMarginType,
+			OutputUsageModel,
+			OutputMarginPayload = GetMarginingLaneStatusRegister(bus, device, function, LaneNum)
+
+		StepMarginExecutionStatus = OutputMarginPayload >> 6
+		ErrorCount = OutputMarginPayload & 0x3F
+		if count > 10 {
+			log.Fatal("Receiver must not report a <Step Margin Execution Status> of 01b for more than 100 ms after it receives a new valid Step Margin command.")
+		}
+		count++
+	}
 	if InputReceiverNum != OutputReceiverNum {
 		log.Fatal("ReceiverNum Data Mis-Match")
 	}
@@ -683,7 +717,5 @@ func StepMarginToVoltageOffset(bus uint8, device uint8, function uint8, LaneNum 
 	if InputUsageModel != OutputUsageModel {
 		log.Fatal("UsageModel Data Mis-Match")
 	}
-	StepMarginExecutionStatus := OutputMarginPayload >> 6
-	ErrorCount := OutputMarginPayload & 0x3F
 	return StepMarginExecutionStatus, ErrorCount
 }
