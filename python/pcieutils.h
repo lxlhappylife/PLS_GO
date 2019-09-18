@@ -72,6 +72,30 @@ Output : RCBus,RCDevice,RCFunction uint8
 
 extern GoUintptr GetHostBDF(GoUint8 p0, GoUint8 p1, GoUint8 p2);
 
+// ConfigReadu32 is for read device's Config Space and return 32 bits value
+
+extern GoUint32 ConfigReadu32(GoUint8 p0, GoUint8 p1, GoUint8 p2, GoUint16 p3);
+
+// ConfigReadu16 is for read device's Config Space and return 16 bits value
+
+extern GoUint16 ConfigReadu16(GoUint8 p0, GoUint8 p1, GoUint8 p2, GoUint16 p3);
+
+// ConfigReadu8 is for read device's Config Space and return 8 bits value
+
+extern GoUint8 ConfigReadu8(GoUint8 p0, GoUint8 p1, GoUint8 p2, GoUint16 p3);
+
+// ConfigWriteu32 is for Write device's Config Space with 32 bits value
+
+extern void ConfigWriteu32(GoUint8 p0, GoUint8 p1, GoUint8 p2, GoUint16 p3, GoUint32 p4);
+
+// ConfigWriteu16 is for Write device's Config Space with 16 bits value
+
+extern void ConfigWriteu16(GoUint8 p0, GoUint8 p1, GoUint8 p2, GoUint16 p3, GoUint16 p4);
+
+// ConfigWriteu8 is for Write device's Config Space with 8 bits value
+
+extern void ConfigWriteu8(GoUint8 p0, GoUint8 p1, GoUint8 p2, GoUint16 p3, GoUint8 p4);
+
 #ifdef __cplusplus
 }
 #endif

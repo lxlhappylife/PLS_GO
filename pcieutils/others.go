@@ -8,7 +8,7 @@ package pcieutils
 
 import (
 	"bytes"
-	"fmt"
+	// "fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -125,14 +125,16 @@ func GetPCIeBaseAddress() uint64 {
 	// fmt.Printf("%s ,", targetLine)
 	if targetLine != "" {
 		items := strings.Split(targetLine, "-")
-		addressString = items[0]
+		addressString = strings.Trim(items[0], " ")
 	} else {
 		log.Fatal("Cannot find target line in iomem.")
 		return 0xFFFFFFFF
 	}
+	// fmt.Printf("addressString = (%s)\n", addressString)
+
 	address, err = strconv.ParseUint(addressString, 16, 64)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 	return address
 }
